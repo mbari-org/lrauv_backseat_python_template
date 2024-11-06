@@ -3,7 +3,7 @@
 Python package that serves as an example and
 [template repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template)
 for your own LRAUV backseat application which uses the LRAUV Backseat LCM Interface python library
-[here](https://bitbucket.org/mbari/lrauv_backseat_py).
+[here](https://bitbucket.org/mbari/lrauv-backseat-helper/src/9290fa3ba06e660be3aeb9cada4c6b6fc606dc90/?at=andermi%2Fupdate_structure).
 
 NOTE: Apps using the interface must be compatible with Python 3.8
 
