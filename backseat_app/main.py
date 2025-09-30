@@ -16,7 +16,11 @@ logger = None
 
 
 # TODO change this to use your code
-from backseat_app.processing import ProcessingClass
+# To add custom data processing:
+# 1. Create a processing module (e.g., backseat_app/processing.py)
+# 2. Import your processing class at the top of this file, e.g.
+# from backseat_app.processing import ProcessingClass
+# 3. Instantiate it and add handlers to the subscribe dict below
 
 
 class BackseatApp(Supervisor, LcmListener):
@@ -27,19 +31,17 @@ class BackseatApp(Supervisor, LcmListener):
         global logger
         logger, _ = Logger.configure_logger(name=app_cfg['app_name'])
 
-        self.processing_class = ProcessingClass(lcm_instance, self.cfg)
-
-        # request LCM data from LRAUV
         self.request_slate(self.cfg['lrauv_data'])
+        # self.processing_class = ProcessingClass(lcm_instance, self.cfg)
 
         # subscribe LCM handlers
         self.set_timeout(timeout_sec=2.5)
-        # TODO change this to add handlers for data requested in config
         self.subscribe(
             {
                 self.cfg['lcm_bsd_command_channel']: self.lrauv_command_handler,
-                'WetLabsUBAT': self.processing_class.handle_ubat,
-                'WetLabsBB2FL': self.processing_class.handle_fluo
+                # TODO add handlers for data processing, e.g.:
+                # 'WetLabsUBAT': self.processing_class.handle_ubat,
+                # 'WetLabsBB2FL': self.processing_class.handle_fluo
             }
         )
 
@@ -70,7 +72,7 @@ def main():
     import argparse
     from lrauv.config.AppConfig import read_config
 
-    default_cfg = ilr.files('backseat_app.config').joinpath('app_config.yml')
+    default_cfg = ilr.files('backseat_app.config').joinpath('app_cfg.yaml')
 
     # parse command-line arguments
     parser = argparse.ArgumentParser(description='Runs the LRAUV backseat app.')

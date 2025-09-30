@@ -17,9 +17,8 @@ lcm_syslog_channel: 'tethys_syslog'
 
 # * LRAUV LCM data request configuration * #
 lrauv_data_timout: 60.0  # seconds
-lrauv_data:  # request data from:
-      - 'WetLabsUBAT.enableBroadcast'
-      - 'WetLabsBB2FL.enableBroadcast'
+lrauv_data: []  # request data from:
+#      - 'WetLabsBB2FL.mass_concentration_of_chlorophyll_in_sea_water'
 
 # * Supervisor configuration * #
 app_name: 'backseat_app'  # set to your app name
@@ -27,6 +26,11 @@ designated_host: 'jetson' # must match the backseat computer hostname for shutdo
 publish_heartbeat: ON
 rsync_target: 'lrauv:/mnt/mmc/Backseat' # attempt to sync logs to the following target at shutdown
 shutdown_cmd: 'sudo shutdown -P now' # system shutdown command (only issued when designated_host == hostname)
+# Data rate monitoring configuration
+data_dir: ''
+min_data_rate_mbps: 0
+data_rate_err_priority: 'FAULT'
+rate_check_mins: 10
 
 # * User-defined configuration * #
 # add more configs
