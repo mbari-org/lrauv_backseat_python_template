@@ -5,13 +5,63 @@ Python package that serves as an example and
 for your own LRAUV backseat application which uses the LRAUV Backseat LCM Interface python library
 [here](https://bitbucket.org/mbari/lrauv-backseat-helper).
 
-NOTE: Apps using the interface must be compatible with Python 3.8
-
 ## Quick Start
 
 First go to the above link and install the LRAUV Backseat LCM Interface library! It is a dependency for any LRAUV backseat Python app.
 
-The template repository is ready to run immediately upon checkout. It will:
+## Python Version Compatibility
+
+This package was originally developed for Python 3.8. The build and install scripts use `python3.8` by default.
+
+### Using Python 3.11+ (including 3.12)
+
+If you're using Python 3.11 or newer, you'll need to make some modifications to the scripts:
+
+#### 1. Configure Shell Environment
+
+Add user-installed executables to PATH:
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### 2. Modify build.sh
+
+In `build.sh`, change line 4: `python3.8 -m build` → `python3 -m build`
+
+#### 3. Modify install.sh
+
+In `install.sh`, change python3.8 to python3. You may also need the --break-system-packages flag for Python3.11+ due to PEP 668 compliance.
+
+## Quick Start Installation
+
+Complete setup from scratch:
+
+```bash
+# 1. Install lrauv-backseat-helper library (required dependency)
+# See: https://bitbucket.org/mbari/lrauv-backseat-helper
+cd ~/path/to/lrauv-backseat-helper
+./build.sh && ./install.sh
+
+# 2. Get the template
+# Option A: Use GitHub's "Use this template" button to create your own repository, then:
+#   git clone <your-repo-url>
+#   cd <your-repo-name>
+# Option B: Clone the template directly (this is going to be weird and less correct!):
+git clone https://github.com/mbari-org/lrauv_backseat_python_template.git
+cd lrauv_backseat_python_template
+
+# 3. Build and install (for Python 3.8)
+./build.sh   # Builds wheel
+./install.sh # Installs backseat_app
+
+# 4. Run the app
+backseat_app
+```
+
+**For Python 3.11+:** See the "Python Version Compatibility" section above for required script modifications.
+
+The template repository is ready to run immediately. It will:
 - Listen for backseat commands from the vehicle
 - Publish a heartbeat every 5 seconds
 - Handle shutdown commands
@@ -22,6 +72,8 @@ To run the app after installation:
 ```bash
 $ backseat_app
 ```
+
+**Note:** Ensure `$HOME/.local/bin` is in your PATH (see "Python Version Compatibility" section above).
 
 ## Install App Package
 
@@ -167,20 +219,82 @@ contain a modified yaml file like the one in `backseat_app/config/app_cfg.yaml`
 
 ## Install Your App As A Service
 
-Along with the Backseat Interface, a helper script is also installed to allow you to create and install
-your app as a Linux service.
+The LRAUV Backseat Helper package includes a utility script to install your backseat app as a Linux systemd service.
 
+### Prerequisites
+
+1. **Install the LRAUV Backseat Helper package first** (if you haven't already):
+   ```bash
+   # For Python 3.8
+   $ pip install lrauv-backseat-helper
+
+   # For Python 3.11+
+   $ pip install --break-system-packages lrauv-backseat-helper
+   ```
+
+2. **Build and install your backseat app package**:
+   ```bash
+   $ ./cycle.sh  # or ./build.sh && ./install.sh
+   ```
+
+3. **Service installation prerequisites:**
+   ```bash
+   # Create the /LRAUV directory
+   sudo mkdir -p /LRAUV
+   sudo chown $USER:$USER /LRAUV
+
+   # Create empy symlink (Python 3.11+ only - the empy package installs as em.py)
+   ln -s ~/.local/bin/em.py ~/.local/bin/empy
+
+   # Ensure PATH is configured (see "Python Version Compatibility" section above)
+   ```
+
+### Creating the Service
+
+Use the `lrauv_install_service` script to create a systemd service for your app.
+
+**Parameters:**
+- `app_name`: Name for your service (e.g., "backseat_app")
+- `app_directory`: Full path to your app's source directory
+- `console_script_name`: Name of the console script installed by your package (found in `~/.local/bin/`)
+
+**For Python 3.8:**
 ```bash
-$ lrauv_install_service <your app name> <top level of your app package> <entry_point console_script executable for your app (installed to ~/.local/bin)>
+$ lrauv_install_service backseat_app ~/lrauv_backseat_python_template backseat_app
 ```
 
-This will install your app as a service with the name your_app.service, and you can interact with
-it using `systemctl`.
-
-#### Status
+**For Python 3.11+**, you may need to preserve the environment when running with sudo. Replace `python3.12` with your Python version (e.g., `python3.11`, `python3.12`):
 ```bash
-$ sudo systemctl status your_app.service
+$ sudo env PATH="$PATH" PYTHONPATH="$HOME/.local/lib/python3.12/site-packages:$PYTHONPATH" \
+    $HOME/.local/bin/lrauv_install_service backseat_app ~/lrauv_backseat_python_template backseat_app
 ```
+
+**What this does:**
+- Creates a systemd service file at `/etc/systemd/system/backseat_app.service`
+- Creates a symlink from your app directory to `/LRAUV/backseat_app`
+- Creates a start script at `/LRAUV/backseat_app/start_backseat_app` that:
+  - Automatically detects the primary network interface
+  - Adds multicast route for LCM (224.0.0.0/4)
+  - Starts the application in a screen session
+- Enables and starts the service
+- Logs will be written to `/LRAUV/backseat_app/logs/` and `/LRAUV/backseat_app/bs.log`
+
+**Note:** The start script uses `sudo` to add the multicast route. Ensure the user has sudo privileges or configure passwordless sudo for the route command.
+
+**Optional: Configure passwordless sudo for route command**
+
+To allow the service to add multicast routes without a password prompt, add this to sudoers:
+```bash
+# Run this command to edit sudoers safely:
+sudo visudo
+
+# Add this line (replace 'tethysadmin' with your username):
+tethysadmin ALL=(ALL) NOPASSWD: /sbin/route
+```
+
+### Managing the Service
+
+Once installed, you can manage your service using systemctl:
 
 #### Stop
 ```bash
